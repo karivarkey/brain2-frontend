@@ -4,18 +4,24 @@ import { colors } from "../theme/colors";
 import { api } from "../lib/api";
 import { Settings, Plus, MessageSquare, ChevronLeft, Send, Sparkles } from "lucide-react";
 
+interface MemoryChange {
+    action: string;
+    file: string;
+    summary: string;
+}
+
 interface Message {
     id?: string;
     conversation_id?: string;
     role: "user" | "assistant";
     content: string;
     created_at?: string;
-    mutationsApplied?: number;
+    memoryChanges?: MemoryChange[];
 }
 
 interface ReplyResponse {
     reply: string;
-    mutationsApplied: number;
+    memoryChanges?: MemoryChange[];
 }
 
 export default function Chat() {
@@ -26,7 +32,14 @@ export default function Chat() {
     const [sessions, setSessions] = useState<{ id: string; snippet: string }[]>([]);
     const [inputMessage, setInputMessage] = useState("");
     const [loading, setLoading] = useState(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 640);
+
+    // Auto-close sidebar on mobile on conversation change
+    useEffect(() => {
+        if (window.innerWidth < 640) {
+            setIsSidebarOpen(false);
+        }
+    }, [conv_id]);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -101,7 +114,7 @@ export default function Chat() {
             const assistantMessage: Message = {
                 role: "assistant",
                 content: response.data.reply,
-                mutationsApplied: response.data.mutationsApplied,
+                memoryChanges: response.data.memoryChanges,
             };
 
             setMessages((prev) => [...prev, assistantMessage]);
@@ -128,10 +141,19 @@ export default function Chat() {
     };
 
     return (
-        <div className="flex h-screen bg-white">
+        <div className="flex h-screen bg-white relative w-full overflow-hidden">
+            {/* Overlay for mobile */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/5 z-40 sm:hidden backdrop-blur-sm"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
             <div
-                className={`${isSidebarOpen ? "w-64" : "w-0 hidden sm:flex sm:w-16"} flex-shrink-0 border-r transition-all duration-300 flex flex-col`}
+                className={`fixed sm:relative z-50 h-full flex-shrink-0 transition-all duration-300 flex flex-col max-w-full ${isSidebarOpen ? "w-64 translate-x-0 border-r" : "w-0 -translate-x-full sm:translate-x-0 border-none opacity-0"
+                    } overflow-hidden`}
                 style={{ borderColor: colors.border, backgroundColor: colors.muted }}
             >
                 {/* Sidebar Header */}
@@ -202,22 +224,19 @@ export default function Chat() {
 
             {/* Main Chat Area */}
             <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
-                {/* Toggle Sidebar mobile */}
-                <div className="sm:hidden absolute top-4 left-4 z-10">
+                {/* Header (Minimal with Sidebar Toggle) */}
+                <div className="h-14 flex items-center justify-between px-4 border-b shrink-0 bg-white/80 backdrop-blur-sm z-10" style={{ borderColor: colors.border }}>
                     <button
                         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        className="p-2 bg-white rounded-lg shadow-sm border"
+                        className="p-2 bg-white rounded-lg shadow-sm border transition-colors hover:bg-black/5"
                         style={{ borderColor: colors.border }}
                     >
                         <MessageSquare className="w-4 h-4" />
                     </button>
-                </div>
-
-                {/* Header (optional, usually minimal in Gemini style) */}
-                <div className="h-14 flex items-center justify-center border-b shrink-0 bg-white/80 backdrop-blur-sm z-10" style={{ borderColor: colors.border }}>
                     <span className="font-semibold text-sm opacity-60">
                         {conv_id ? `Chat Context: ${conv_id}` : 'New Conversation'}
                     </span>
+                    <div className="w-8" />
                 </div>
 
                 {/* Messages */}
@@ -247,11 +266,24 @@ export default function Chat() {
                                 </div>
 
                                 {/* Assistant Metadata (Mutations) */}
-                                {msg.role === "assistant" && msg.mutationsApplied !== undefined && (
-                                    <div className="mt-2 flex items-center gap-1.5 px-1 opacity-50 text-xs font-medium">
-                                        <Settings className="w-3 h-3" />
-                                        <span>{msg.mutationsApplied} System Mutations</span>
-                                    </div>
+                                {msg.role === "assistant" && msg.memoryChanges && msg.memoryChanges.length > 0 && (
+                                    <details className="mt-2 w-full max-w-sm group">
+                                        <summary className="flex items-center gap-1.5 px-1 opacity-50 text-xs font-medium cursor-pointer list-none transition-opacity hover:opacity-100 select-none">
+                                            <Settings className="w-3 h-3 group-open:rotate-90 transition-transform" />
+                                            <span>{msg.memoryChanges.length} System Mutations</span>
+                                        </summary>
+                                        <div className="mt-2 text-xs border rounded-xl p-3 bg-white space-y-2 shadow-sm" style={{ borderColor: colors.border }}>
+                                            {msg.memoryChanges.map((change, i) => (
+                                                <div key={i} className="flex flex-col gap-1 pb-2 border-b last:border-0 last:pb-0" style={{ borderColor: colors.border }}>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="px-1.5 py-0.5 rounded bg-black/5 font-semibold capitalize text-[10px]">{change.action}</span>
+                                                        <span className="font-medium opacity-80">{change.file}</span>
+                                                    </div>
+                                                    <p className="opacity-70 leading-relaxed text-[11px]">{change.summary}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </details>
                                 )}
                             </div>
                         ))}

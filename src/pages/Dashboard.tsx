@@ -100,21 +100,24 @@ export default function Dashboard() {
                 <h1 className="text-3xl font-semibold tracking-tight" style={{ color: colors.foreground }}>
                     Dashboard
                 </h1>
-                <div className="flex gap-4 items-center">
+                <div className="flex gap-4 items-center justify-between w-full sm:w-auto">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 uppercase font-semibold text-lg" style={{ backgroundColor: colors.muted, color: colors.foreground }}>
+                            {user?.email?.[0] || "?"}
+                        </div>
+                        <p className="text-sm font-medium opacity-60 truncate max-w-[140px] sm:max-w-none">
+                            {user?.email}
+                        </p>
+                    </div>
                     <button
                         onClick={() => navigate('/chat')}
-                        className="px-5 py-2 rounded-full text-sm font-medium transition-transform hover:scale-105 active:scale-95"
+                        className="flex items-center gap-2 px-5 py-2.5 sm:py-2 rounded-full text-sm font-medium transition-transform hover:scale-105 active:scale-95 shrink-0"
                         style={{ backgroundColor: colors.foreground, color: colors.background }}
                     >
-                        Chat Now
+                        <MessageSquare className="w-4 h-4 sm:hidden" />
+                        <span className="hidden sm:inline">Chat Now</span>
+                        <span className="sm:hidden">Chat</span>
                     </button>
-                    <div className="w-1 h-8 bg-gray-200 rounded-full mx-2 hidden sm:block" />
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 uppercase font-semibold text-lg" style={{ backgroundColor: colors.muted, color: colors.foreground }}>
-                        {user?.email?.[0] || "?"}
-                    </div>
-                    <p className="text-sm font-medium opacity-60 truncate max-w-[150px] sm:max-w-none">
-                        {user?.email}
-                    </p>
                 </div>
             </div>
 
@@ -140,19 +143,19 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div className="flex flex-col gap-12">
                 {/* Recent Memories Column */}
                 <section>
                     <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
                         <Clock className="w-5 h-5 opacity-60" />
                         Recent Memories
                     </h2>
-                    <div className="grid gap-4">
+                    <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
                         {data.memories.recent.map((memory) => (
                             <Link
                                 to={`/memory#${memory.id}`}
                                 key={memory.id}
-                                className="group p-5 rounded-2xl border transition-all hover:-translate-y-1 hover:shadow-md"
+                                className="group p-5 rounded-2xl border transition-all hover:-translate-y-1 hover:shadow-md min-w-[280px] snap-center flex-shrink-0"
                                 style={{ borderColor: colors.border, backgroundColor: colors.background }}
                             >
                                 <div className="flex items-center gap-3 mb-3">
@@ -181,42 +184,47 @@ export default function Dashboard() {
                         Latest Session
                     </h2>
                     {data.sessions.all && data.sessions.all.length > 0 ? (
-                        <div
-                            className="p-6 rounded-3xl border cursor-pointer transition-all hover:border-black/30 hover:shadow-md"
-                            style={{ borderColor: colors.border, backgroundColor: colors.muted }}
-                            onClick={() => navigate(`/chat/${data.sessions.all[0].conversation_id}`)}
-                        >
-                            <div className="flex items-center justify-between mb-6">
-                                <span className="text-xs font-medium px-3 py-1 bg-white rounded-full shadow-sm border" style={{ borderColor: colors.border }}>
-                                    Chat ID: {data.sessions.all[0].conversation_id}
-                                </span>
-                                <span className="text-xs opacity-60 font-medium">
-                                    {data.sessions.all[0].message_count} messages
-                                </span>
-                            </div>
-
-                            <div className="flex flex-col gap-4">
-                                {data.sessions.all[0].recent_messages.map((msg, i) => (
-                                    <div
-                                        key={i}
-                                        className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.role === "user"
-                                            ? "self-end bg-black text-white"
-                                            : "self-start bg-white border"
-                                            }`}
-                                        style={msg.role === "assistant" ? { borderColor: colors.border, color: colors.foreground } : {}}
-                                    >
-                                        <p className="line-clamp-4 whitespace-pre-wrap">{msg.content}</p>
-                                        <span className={`text-[10px] mt-2 block opacity-50 ${msg.role === "user" ? "text-right" : ""}`}>
-                                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <div className="flex overflow-x-auto gap-6 pb-4 snap-x snap-mandatory" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                            {data.sessions.all.map((session) => (
+                                <div
+                                    key={session.conversation_id}
+                                    className="p-6 rounded-3xl border cursor-pointer transition-all hover:border-black/30 hover:shadow-md min-w-[320px] max-w-[400px] snap-center flex-shrink-0"
+                                    style={{ borderColor: colors.border, backgroundColor: colors.muted }}
+                                    onClick={() => navigate(`/chat/${session.conversation_id}`)}
+                                >
+                                    <div className="flex items-center justify-between mb-6">
+                                        <span className="text-xs font-medium px-3 py-1 bg-white rounded-full shadow-sm border" style={{ borderColor: colors.border }}>
+                                            Chat ID: {session.conversation_id}
+                                        </span>
+                                        <span className="text-xs opacity-60 font-medium">
+                                            {session.message_count} messages
                                         </span>
                                     </div>
-                                ))}
-                            </div>
 
-                            <div className="mt-6 pt-4 border-t flex items-center justify-center gap-2 text-sm font-medium transition-opacity hover:opacity-70" style={{ borderColor: colors.border }}>
-                                Continue Conversation
-                                <span className="font-serif">→</span>
-                            </div>
+                                    <div className="flex flex-col gap-4">
+                                        {session.recent_messages.slice(-3).map((msg, i) => (
+                                            <div
+                                                key={i}
+                                                className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.role === "user"
+                                                    ? "self-end bg-black text-white"
+                                                    : "self-start bg-white border"
+                                                    }`}
+                                                style={msg.role === "assistant" ? { borderColor: colors.border, color: colors.foreground } : {}}
+                                            >
+                                                <p className="line-clamp-4 whitespace-pre-wrap">{msg.content}</p>
+                                                <span className={`text-[10px] mt-2 block opacity-50 ${msg.role === "user" ? "text-right" : ""}`}>
+                                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-6 pt-4 border-t flex items-center justify-center gap-2 text-sm font-medium transition-opacity hover:opacity-70" style={{ borderColor: colors.border }}>
+                                        Continue Conversation
+                                        <span className="font-serif">→</span>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     ) : (
                         <div className="p-6 rounded-2xl border text-center opacity-60 text-sm font-medium" style={{ borderColor: colors.border }}>
@@ -225,6 +233,7 @@ export default function Dashboard() {
                     )}
                 </section>
             </div>
+
         </div>
     );
 }
