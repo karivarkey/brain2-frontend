@@ -100,6 +100,14 @@ export default function Dashboard() {
                     Dashboard
                 </h1>
                 <div className="flex gap-4 items-center">
+                    <button
+                        onClick={() => navigate('/chat')}
+                        className="px-5 py-2 rounded-full text-sm font-medium transition-transform hover:scale-105 active:scale-95"
+                        style={{ backgroundColor: colors.foreground, color: colors.background }}
+                    >
+                        Chat Now
+                    </button>
+                    <div className="w-1 h-8 bg-gray-200 rounded-full mx-2 hidden sm:block" />
                     <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 uppercase font-semibold text-lg" style={{ backgroundColor: colors.muted, color: colors.foreground }}>
                         {user?.email?.[0] || "?"}
                     </div>
@@ -191,8 +199,8 @@ export default function Dashboard() {
                                     <div
                                         key={i}
                                         className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.role === "user"
-                                                ? "self-end bg-black text-white"
-                                                : "self-start bg-white border"
+                                            ? "self-end bg-black text-white"
+                                            : "self-start bg-white border"
                                             }`}
                                         style={msg.role === "assistant" ? { borderColor: colors.border, color: colors.foreground } : {}}
                                     >
