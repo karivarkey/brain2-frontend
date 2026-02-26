@@ -9,6 +9,7 @@ import Landing from "./pages/Landing";
 import Chat from "./pages/Chat";
 import Memory from "./pages/Memory";
 import Dashboard from "./pages/Dashboard";
+import Settings from "./pages/Settings";
 
 export default function App() {
   const location = useLocation();
@@ -23,13 +24,66 @@ export default function App() {
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             {/* Public route */}
-            <Route path="/" element={<PageTransition><Landing /></PageTransition>} />
+            <Route
+              path="/"
+              element={
+                <PageTransition>
+                  <Landing />
+                </PageTransition>
+              }
+            />
 
             {/* Guarded routes without the landing Navigation header */}
-            <Route path="/chat" element={<AuthGuard><PageTransition><Chat /></PageTransition></AuthGuard>} />
-            <Route path="/chat/:conv_id" element={<AuthGuard><PageTransition><Chat /></PageTransition></AuthGuard>} />
-            <Route path="/memory" element={<AuthGuard><PageTransition><Memory /></PageTransition></AuthGuard>} />
-            <Route path="/dashboard" element={<AuthGuard><PageTransition><Dashboard /></PageTransition></AuthGuard>} />
+            <Route
+              path="/chat"
+              element={
+                <AuthGuard>
+                  <PageTransition>
+                    <Chat />
+                  </PageTransition>
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/chat/:conv_id"
+              element={
+                <AuthGuard>
+                  <PageTransition>
+                    <Chat />
+                  </PageTransition>
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/memory"
+              element={
+                <AuthGuard>
+                  <PageTransition>
+                    <Memory />
+                  </PageTransition>
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <AuthGuard>
+                  <PageTransition>
+                    <Dashboard />
+                  </PageTransition>
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <AuthGuard>
+                  <PageTransition>
+                    <Settings />
+                  </PageTransition>
+                </AuthGuard>
+              }
+            />
           </Routes>
         </AnimatePresence>
       </main>

@@ -14,15 +14,22 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const messaging = getMessaging(app);
 
-export async function requestPushPermission() {
+
+const messaging = getMessaging(app);
+
+export async function enablePush() {
     const permission = await Notification.requestPermission();
     if (permission !== "granted") return null;
 
+    const registration = await navigator.serviceWorker.getRegistration(
+        "/firebase-messaging-sw.js"
+    );
+
     const token = await getToken(messaging, {
-        vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
+        vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+        serviceWorkerRegistration: registration
     });
 
-    return token; // send to backend
+    return token;
 }
