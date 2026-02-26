@@ -1,35 +1,37 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Routes, Route, useLocation } from "react-router-dom";
+import { AnimatePresence } from "motion/react";
 
-function App() {
-  const [count, setCount] = useState(0)
+import Navigation from "./components/Navigation";
+import { AuthGuard } from "./components/AuthGuard";
+import PageTransition from "./components/PageTransition";
+
+import Landing from "./pages/Landing";
+import Chat from "./pages/Chat";
+import Memory from "./pages/Memory";
+import Dashboard from "./pages/Dashboard";
+
+export default function App() {
+  const location = useLocation();
+  const isLandingPage = location.pathname === "/";
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <div className="min-h-screen font-sans antialiased text-black bg-white selection:bg-black/10">
+      {/* Navigation is only shown on the Landing Page as requested */}
+      {isLandingPage && <Navigation />}
 
-export default App
+      <main className={isLandingPage ? "pt-16 min-h-screen" : "min-h-screen"}>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            {/* Public route */}
+            <Route path="/" element={<PageTransition><Landing /></PageTransition>} />
+
+            {/* Guarded routes without the landing Navigation header */}
+            <Route path="/chat" element={<AuthGuard><PageTransition><Chat /></PageTransition></AuthGuard>} />
+            <Route path="/memory" element={<AuthGuard><PageTransition><Memory /></PageTransition></AuthGuard>} />
+            <Route path="/dashboard" element={<AuthGuard><PageTransition><Dashboard /></PageTransition></AuthGuard>} />
+          </Routes>
+        </AnimatePresence>
+      </main>
+    </div>
+  );
+}
