@@ -23,7 +23,7 @@ const FadeSection = ({ children, className = "" }: SectionProps) => (
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-        className={`py-24 md:py-32 flex flex-col items-start max-w-2xl mx-auto w-full px-6 ${className}`}
+        className={`py-16 sm:py-24 md:py-32 flex flex-col items-start max-w-2xl mx-auto w-full px-4 sm:px-6 ${className}`}
     >
         {children}
     </motion.section>
@@ -44,20 +44,20 @@ export default function Landing() {
                 initial={{ opacity: 0, filter: "blur(4px)" }}
                 animate={{ opacity: 1, filter: "blur(0px)" }}
                 transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                className="min-h-[85vh] flex flex-col justify-center max-w-3xl mx-auto px-6 pt-16"
+                className="min-h-[85vh] flex flex-col justify-center max-w-3xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24"
             >
-                <h1 className="text-5xl md:text-7xl font-semibold tracking-tight leading-[1.1] mb-8">
+                <h1 className="text-4xl sm:text-5xl md:text-7xl font-semibold tracking-tight leading-[1.1] mb-6 sm:mb-8">
                     A system that remembers who you are.
                 </h1>
-                <p className="text-xl md:text-2xl opacity-60 font-medium mb-12 max-w-xl">
+                <p className="text-lg sm:text-xl md:text-2xl opacity-60 font-medium mb-10 sm:mb-12 max-w-xl">
                     Not a chatbot. <br />
                     Not a productivity tool. <br />
                     A cognitive mirror.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
                     <Link
                         to="/chat"
-                        className="group flex items-center justify-center gap-2 px-8 py-4 rounded-full text-base font-medium transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                        className="group flex flex-1 sm:flex-none items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-sm sm:text-base font-medium transition-transform hover:scale-[1.02] active:scale-[0.98]"
                         style={{ backgroundColor: colors.foreground, color: colors.background }}
                     >
                         Enter Chat
@@ -65,7 +65,7 @@ export default function Landing() {
                     </Link>
                     <Link
                         to="/memory"
-                        className="flex items-center justify-center px-8 py-4 rounded-full text-base font-medium transition-colors hover:bg-black/5"
+                        className="flex flex-1 sm:flex-none items-center justify-center px-6 sm:px-8 py-3 sm:py-4 rounded-full text-sm sm:text-base font-medium transition-colors hover:bg-black/5"
                         style={{ backgroundColor: colors.muted, color: colors.foreground }}
                     >
                         View Memory
