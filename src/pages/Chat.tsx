@@ -4,6 +4,7 @@ import { colors } from "../theme/colors";
 import { api } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { enablePush } from "../lib/firebase";
+import { isFirstTimeUser } from "../lib/userUtils";
 import {
   Settings,
   Plus,
@@ -64,6 +65,13 @@ export default function Chat() {
   useEffect(() => {
     const fetchSidebarData = async () => {
       try {
+        // Check if this is a first-time user
+        const firstTime = await isFirstTimeUser();
+        if (firstTime) {
+          navigate("/onboard", { replace: true });
+          return;
+        }
+
         const response = await api.get("/dashboard");
         // Extract basic info from the dashboard payload to list history
         // Realistically backend might need a /conversations endpoint but we use what we have
@@ -89,7 +97,7 @@ export default function Chat() {
       }
     };
     fetchSidebarData();
-  }, []);
+  }, [navigate]);
 
   // Fetch Messages for active conv_id
   useEffect(() => {

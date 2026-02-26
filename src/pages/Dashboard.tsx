@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { colors } from "../theme/colors";
 import { api } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
+import { isFirstTimeUser } from "../lib/userUtils";
 import {
   FileText,
   Calendar,
@@ -69,6 +70,13 @@ export default function Dashboard() {
       try {
         const response = await api.get("/dashboard");
         setData(response.data);
+
+        // Check if this is a first-time user
+        const firstTime = await isFirstTimeUser();
+        if (firstTime) {
+          navigate("/onboard", { replace: true });
+          return;
+        }
       } catch (err) {
         console.error("Dashboard fetch error:", err);
         // Fallback or error state
@@ -79,7 +87,7 @@ export default function Dashboard() {
     };
 
     fetchDashboard();
-  }, []);
+  }, [navigate]);
 
   if (loading) {
     return (

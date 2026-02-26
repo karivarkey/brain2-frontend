@@ -10,6 +10,7 @@ import Chat from "./pages/Chat";
 import Memory from "./pages/Memory";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
+import Onboard from "./pages/Onboard";
 
 export default function App() {
   const location = useLocation();
@@ -80,6 +81,16 @@ export default function App() {
                 <AuthGuard>
                   <PageTransition>
                     <Settings />
+                  </PageTransition>
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/onboard"
+              element={
+                <AuthGuard>
+                  <PageTransition>
+                    <Onboard />
                   </PageTransition>
                 </AuthGuard>
               }
