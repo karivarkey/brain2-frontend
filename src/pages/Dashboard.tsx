@@ -13,8 +13,18 @@ import {
   MessageSquare,
   Clock,
   Settings,
+  Plus,
+  Bell,
+  CheckCircle2,
 } from "lucide-react";
 import { MarkdownRenderer } from "../components/MarkdownRenderer";
+import { ReminderCard } from "../components/ReminderCard";
+import {
+  CreateReminderModal,
+  type CreateReminderData,
+} from "../components/CreateReminderModal";
+import { NextOccurrencesModal } from "../components/NextOccurrencesModal";
+import type { Reminder, NextOccurrencesResponse } from "../types/reminder";
 
 interface DashboardData {
   memories: {
@@ -62,14 +72,26 @@ export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [data, setData] = useState<DashboardData | null>(null);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showNextModal, setShowNextModal] = useState(false);
+  const [nextModalData, setNextModalData] =
+    useState<NextOccurrencesResponse | null>(null);
+  const [nextModalLoading, setNextModalLoading] = useState(false);
+  const [creatingReminder, setCreatingReminder] = useState(false);
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const response = await api.get("/dashboard");
-        setData(response.data);
+        const [dashboardRes, remindersRes] = await Promise.all([
+          api.get("/dashboard"),
+          api.get(`/api/reminders/${user?.uid}`),
+        ]);
+
+        setData(dashboardRes.data);
+        setReminders(remindersRes.data.reminders || []);
 
         // Check if this is a first-time user
         const firstTime = await isFirstTimeUser();
@@ -79,15 +101,72 @@ export default function Dashboard() {
         }
       } catch (err) {
         console.error("Dashboard fetch error:", err);
-        // Fallback or error state
         setError("Failed to load dashboard data.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDashboard();
-  }, [navigate]);
+    if (user?.uid) {
+      fetchDashboard();
+    }
+  }, [navigate, user?.uid]);
+
+  const handleCreateReminder = async (data: CreateReminderData) => {
+    if (!user?.uid) return;
+
+    setCreatingReminder(true);
+    try {
+      const response = await api.post("/api/reminders", {
+        userId: user.uid,
+        fcmToken: "", // TODO: Get FCM token from Firebase
+        naturalLanguage: data.naturalLanguage,
+        timezone: data.timezone,
+      });
+
+      setReminders([response.data, ...reminders]);
+    } finally {
+      setCreatingReminder(false);
+    }
+  };
+
+  const handleToggleReminder = async (reminderId: string) => {
+    try {
+      const response = await api.post(`/api/reminders/${reminderId}/toggle`);
+      setReminders(
+        reminders.map((r) => (r.id === reminderId ? response.data : r)),
+      );
+    } catch (err) {
+      console.error("Failed to toggle reminder:", err);
+    }
+  };
+
+  const handleDeleteReminder = async (reminderId: string) => {
+    try {
+      await api.delete(`/api/reminders/${reminderId}`);
+      setReminders(reminders.filter((r) => r.id !== reminderId));
+    } catch (err) {
+      console.error("Failed to delete reminder:", err);
+    }
+  };
+
+  const handleViewNextOccurrences = async (reminderId: string) => {
+    setNextModalLoading(true);
+    try {
+      const response = await api.get(
+        `/api/reminders/${reminderId}/next?count=5`,
+      );
+      setNextModalData(response.data);
+      setShowNextModal(true);
+    } catch (err) {
+      console.error("Failed to fetch next occurrences:", err);
+    } finally {
+      setNextModalLoading(false);
+    }
+  };
+
+  const activeReminders = reminders.filter((r) => r.active);
+  const inactiveReminders = reminders.filter((r) => !r.active);
 
   if (loading) {
     return (
@@ -96,8 +175,7 @@ export default function Dashboard() {
       </div>
     );
   }
-
-  if (error || !data) {
+  if (error) {
     return (
       <div className="w-full h-screen flex flex-col items-center justify-center p-6 text-center">
         <p className="text-xl mb-4 text-red-600">
@@ -176,7 +254,7 @@ export default function Dashboard() {
             Total Memories
           </p>
           <p className="text-3xl sm:text-4xl font-semibold">
-            {data.memories.total}
+            {data?.memories.total || 0}
           </p>
         </div>
         <div
@@ -187,28 +265,136 @@ export default function Dashboard() {
             Sessions
           </p>
           <p className="text-3xl sm:text-4xl font-semibold">
-            {data.sessions.total}
+            {data?.sessions.total || 0}
           </p>
         </div>
         <div
-          className="col-span-2 p-6 rounded-2xl border flex flex-col justify-center"
-          style={{ borderColor: colors.border }}
+          className="p-6 rounded-2xl border flex flex-col items-center text-center justify-center"
+          style={{ borderColor: colors.border, backgroundColor: colors.muted }}
         >
-          <p className="text-sm font-medium mb-4">Memory Breakdown</p>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(data.memories.byType).map(([type, count]) => (
-              <span
-                key={type}
-                className="px-3 py-1 text-xs font-medium rounded-full bg-black/5 flex items-center gap-1.5 capitalize"
-              >
-                {type} <span className="opacity-50">{count}</span>
-              </span>
-            ))}
-          </div>
+          <p className="text-xs sm:text-sm font-medium opacity-60 mb-2">
+            Total Reminders
+          </p>
+          <p className="text-3xl sm:text-4xl font-semibold">
+            {reminders.length}
+          </p>
+        </div>
+        <div
+          className="p-6 rounded-2xl border flex flex-col items-center text-center justify-center"
+          style={{ borderColor: colors.border, backgroundColor: colors.muted }}
+        >
+          <p className="text-xs sm:text-sm font-medium opacity-60 mb-2">
+            Active
+          </p>
+          <p className="text-3xl sm:text-4xl font-semibold">
+            {activeReminders.length}
+          </p>
         </div>
       </div>
 
       <div className="flex flex-col gap-12">
+        {/* Reminders Section */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Bell className="w-5 h-5 opacity-60" />
+              Reminders
+            </h2>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-transform hover:scale-105 active:scale-95"
+              style={{
+                backgroundColor: colors.foreground,
+                color: colors.background,
+              }}
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Add Reminder</span>
+              <span className="sm:hidden">Add</span>
+            </button>
+          </div>
+
+          {reminders.length === 0 ? (
+            <div
+              className="p-12 rounded-2xl border text-center flex flex-col items-center justify-center gap-4"
+              style={{
+                borderColor: colors.border,
+                backgroundColor: colors.muted,
+              }}
+            >
+              <Bell className="w-12 h-12 opacity-20" />
+              <div>
+                <p className="font-medium mb-1">No reminders yet</p>
+                <p className="text-sm opacity-60">
+                  Create your first reminder to stay on top of your tasks
+                </p>
+              </div>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="mt-2 px-4 py-2 rounded-full text-sm font-medium transition-transform hover:scale-105 active:scale-95"
+                style={{
+                  backgroundColor: colors.foreground,
+                  color: colors.background,
+                }}
+              >
+                Create Reminder
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Active Reminders */}
+              {activeReminders.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <CheckCircle2 className="w-4 h-4 opacity-60" />
+                    <span className="text-xs font-medium opacity-60">
+                      ACTIVE ({activeReminders.length})
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {activeReminders.map((reminder) => (
+                      <ReminderCard
+                        key={reminder.id}
+                        reminder={reminder}
+                        onToggle={handleToggleReminder}
+                        onDelete={handleDeleteReminder}
+                        onViewNext={() =>
+                          handleViewNextOccurrences(reminder.id)
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Inactive Reminders */}
+              {inactiveReminders.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3 mt-6">
+                    <Clock className="w-4 h-4 opacity-60" />
+                    <span className="text-xs font-medium opacity-60">
+                      INACTIVE ({inactiveReminders.length})
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {inactiveReminders.map((reminder) => (
+                      <ReminderCard
+                        key={reminder.id}
+                        reminder={reminder}
+                        onToggle={handleToggleReminder}
+                        onDelete={handleDeleteReminder}
+                        onViewNext={() =>
+                          handleViewNextOccurrences(reminder.id)
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
         {/* Recent Memories Column */}
         <section>
           <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
@@ -219,34 +405,43 @@ export default function Dashboard() {
             className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           >
-            {data.memories.recent.map((memory) => (
-              <Link
-                to={`/memory#${memory.id}`}
-                key={memory.id}
-                className="group p-5 rounded-2xl border transition-all hover:-translate-y-1 hover:shadow-md min-w-[280px] snap-center flex-shrink-0"
-                style={{
-                  borderColor: colors.border,
-                  backgroundColor: colors.background,
-                }}
+            {data?.memories?.recent?.length ? (
+              data.memories.recent.map((memory) => (
+                <Link
+                  to={`/memory#${memory.id}`}
+                  key={memory.id}
+                  className="group p-5 rounded-2xl border transition-all hover:-translate-y-1 hover:shadow-md min-w-[280px] snap-center flex-shrink-0"
+                  style={{
+                    borderColor: colors.border,
+                    backgroundColor: colors.background,
+                  }}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 rounded-lg bg-black/5 group-hover:bg-black group-hover:text-white transition-colors">
+                      {getIconForType(memory.type)}
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-sm leading-tight group-hover:underline">
+                        {memory.filename}
+                      </h3>
+                      <p className="text-xs opacity-50 mt-0.5">
+                        {memory.last_updated}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-sm opacity-70 line-clamp-2 leading-relaxed">
+                    <MarkdownRenderer content={memory.preview} />
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div
+                className="w-full p-6 rounded-2xl border text-center opacity-60 text-sm font-medium"
+                style={{ borderColor: colors.border }}
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 rounded-lg bg-black/5 group-hover:bg-black group-hover:text-white transition-colors">
-                    {getIconForType(memory.type)}
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-sm leading-tight group-hover:underline">
-                      {memory.filename}
-                    </h3>
-                    <p className="text-xs opacity-50 mt-0.5">
-                      {memory.last_updated}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-sm opacity-70 line-clamp-2 leading-relaxed">
-                  <MarkdownRenderer content={memory.preview} />
-                </div>
-              </Link>
-            ))}
+                No recent memories found.
+              </div>
+            )}
           </div>
         </section>
 
@@ -256,7 +451,7 @@ export default function Dashboard() {
             <MessageSquare className="w-5 h-5 opacity-60" />
             Latest Session
           </h2>
-          {data.sessions.all && data.sessions.all.length > 0 ? (
+          {data?.sessions?.all?.length ? (
             <div
               className="flex overflow-x-auto gap-6 pb-4 snap-x snap-mandatory"
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
@@ -340,6 +535,21 @@ export default function Dashboard() {
           )}
         </section>
       </div>
+
+      {/* Modals */}
+      <CreateReminderModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateReminder}
+        isLoading={creatingReminder}
+      />
+
+      <NextOccurrencesModal
+        isOpen={showNextModal}
+        onClose={() => setShowNextModal(false)}
+        data={nextModalData}
+        isLoading={nextModalLoading}
+      />
     </div>
   );
 }
