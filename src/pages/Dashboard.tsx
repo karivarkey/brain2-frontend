@@ -19,15 +19,16 @@ interface DashboardData {
     };
     sessions: {
         total: number;
-        latest: {
+        all: Array<{
             conversation_id: string;
             message_count: number;
-            messages: Array<{
+            last_message_at: string;
+            recent_messages: Array<{
                 role: string;
                 content: string;
                 created_at: string;
             }>;
-        };
+        }>;
     };
 }
 
@@ -179,23 +180,23 @@ export default function Dashboard() {
                         <MessageSquare className="w-5 h-5 opacity-60" />
                         Latest Session
                     </h2>
-                    {data.sessions.latest ? (
+                    {data.sessions.all && data.sessions.all.length > 0 ? (
                         <div
                             className="p-6 rounded-3xl border cursor-pointer transition-all hover:border-black/30 hover:shadow-md"
                             style={{ borderColor: colors.border, backgroundColor: colors.muted }}
-                            onClick={() => navigate(`/chat/${data.sessions.latest.conversation_id}`)}
+                            onClick={() => navigate(`/chat/${data.sessions.all[0].conversation_id}`)}
                         >
                             <div className="flex items-center justify-between mb-6">
                                 <span className="text-xs font-medium px-3 py-1 bg-white rounded-full shadow-sm border" style={{ borderColor: colors.border }}>
-                                    Chat ID: {data.sessions.latest.conversation_id}
+                                    Chat ID: {data.sessions.all[0].conversation_id}
                                 </span>
                                 <span className="text-xs opacity-60 font-medium">
-                                    {data.sessions.latest.message_count} messages
+                                    {data.sessions.all[0].message_count} messages
                                 </span>
                             </div>
 
                             <div className="flex flex-col gap-4">
-                                {data.sessions.latest.messages.map((msg, i) => (
+                                {data.sessions.all[0].recent_messages.map((msg, i) => (
                                     <div
                                         key={i}
                                         className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.role === "user"

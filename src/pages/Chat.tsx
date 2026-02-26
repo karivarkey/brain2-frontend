@@ -42,12 +42,17 @@ export default function Chat() {
                 const response = await api.get("/dashboard");
                 // Extract basic info from the dashboard payload to list history
                 // Realistically backend might need a /conversations endpoint but we use what we have
-                if (response.data?.sessions?.latest) {
-                    const latest = response.data.sessions.latest;
-                    setSessions([{
-                        id: latest.conversation_id,
-                        snippet: latest.messages?.[0]?.content?.slice(0, 30) || "Recent Session..."
-                    }]);
+                if (response.data?.sessions?.all) {
+                    const allSessions = response.data.sessions.all;
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    setSessions(allSessions.map((session: any) => {
+                        const messages = session.recent_messages;
+                        const lastMsg = messages && messages.length > 0 ? messages[messages.length - 1].content : "Recent Session...";
+                        return {
+                            id: session.conversation_id,
+                            snippet: lastMsg.slice(0, 30)
+                        };
+                    }));
                 }
             } catch (err) {
                 console.error("Failed to load sessions:", err);
@@ -233,8 +238,8 @@ export default function Chat() {
                             >
                                 <div
                                     className={`px-5 py-3.5 rounded-2xl text-base leading-relaxed ${msg.role === 'user'
-                                            ? 'bg-black text-white rounded-br-sm'
-                                            : 'bg-[#f4f4f4] text-black border shadow-sm rounded-bl-sm'
+                                        ? 'bg-black text-white rounded-br-sm'
+                                        : 'bg-[#f4f4f4] text-black border shadow-sm rounded-bl-sm'
                                         }`}
                                     style={msg.role === 'assistant' ? { borderColor: colors.border } : {}}
                                 >
