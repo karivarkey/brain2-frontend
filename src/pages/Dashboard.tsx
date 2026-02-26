@@ -4,6 +4,7 @@ import { colors } from "../theme/colors";
 import { api } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { FileText, Calendar, Folder, User, FileQuestion, MessageSquare, Clock } from "lucide-react";
+import { MarkdownRenderer } from "../components/MarkdownRenderer";
 
 interface DashboardData {
     memories: {
@@ -169,9 +170,9 @@ export default function Dashboard() {
                                         <p className="text-xs opacity-50 mt-0.5">{memory.last_updated}</p>
                                     </div>
                                 </div>
-                                <p className="text-sm opacity-70 line-clamp-2 leading-relaxed">
-                                    {memory.preview}
-                                </p>
+                                <div className="text-sm opacity-70 line-clamp-2 leading-relaxed">
+                                    <MarkdownRenderer content={memory.preview} />
+                                </div>
                             </Link>
                         ))}
                     </div>
@@ -211,7 +212,13 @@ export default function Dashboard() {
                                                     }`}
                                                 style={msg.role === "assistant" ? { borderColor: colors.border, color: colors.foreground } : {}}
                                             >
-                                                <p className="line-clamp-4 whitespace-pre-wrap">{msg.content}</p>
+                                                <div className="line-clamp-4">
+                                                    {msg.role === 'assistant' ? (
+                                                        <MarkdownRenderer content={msg.content} />
+                                                    ) : (
+                                                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                                                    )}
+                                                </div>
                                                 <span className={`text-[10px] mt-2 block opacity-50 ${msg.role === "user" ? "text-right" : ""}`}>
                                                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
