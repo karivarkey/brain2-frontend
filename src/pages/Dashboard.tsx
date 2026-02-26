@@ -1,56 +1,220 @@
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { colors } from "../theme/colors";
+import { api } from "../lib/api";
+import { useAuth } from "../contexts/AuthContext";
+import { FileText, Calendar, Folder, User, FileQuestion, MessageSquare, Clock } from "lucide-react";
+
+interface DashboardData {
+    memories: {
+        total: number;
+        byType: Record<string, number>;
+        recent: Array<{
+            id: string;
+            filename: string;
+            type?: string;
+            preview: string;
+            last_updated: string;
+        }>;
+    };
+    sessions: {
+        total: number;
+        latest: {
+            conversation_id: string;
+            message_count: number;
+            messages: Array<{
+                role: string;
+                content: string;
+                created_at: string;
+            }>;
+        };
+    };
+}
+
+const getIconForType = (type?: string) => {
+    switch (type) {
+        case "note":
+            return <FileText className="w-5 h-5" />;
+        case "event":
+            return <Calendar className="w-5 h-5" />;
+        case "project":
+            return <Folder className="w-5 h-5" />;
+        case "person":
+            return <User className="w-5 h-5" />;
+        default:
+            return <FileQuestion className="w-5 h-5" />;
+    }
+};
 
 export default function Dashboard() {
+    const { user } = useAuth();
+    const navigate = useNavigate();
+    const [data, setData] = useState<DashboardData | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchDashboard = async () => {
+            try {
+                const response = await api.get("/dashboard");
+                setData(response.data);
+            } catch (err) {
+                console.error("Dashboard fetch error:", err);
+                // Fallback or error state
+                setError("Failed to load dashboard data.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboard();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="w-full h-screen flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    if (error || !data) {
+        return (
+            <div className="w-full h-screen flex flex-col items-center justify-center p-6 text-center">
+                <p className="text-xl mb-4 text-red-600">{error || "No data available."}</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="px-6 py-2 rounded-full bg-black text-white text-sm font-medium transition-transform hover:scale-105"
+                >
+                    Try Again
+                </button>
+            </div>
+        );
+    }
+
     return (
-        <div className="max-w-4xl mx-auto w-full px-6 py-12">
-            <div className="flex items-center justify-between mb-12">
-                <h1 className="text-3xl font-semibold" style={{ color: colors.foreground }}>
+        <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-12">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-12 border-b pb-8" style={{ borderColor: colors.border }}>
+                <h1 className="text-3xl font-semibold tracking-tight" style={{ color: colors.foreground }}>
                     Dashboard
                 </h1>
-                <div className="flex gap-4">
-                    <button
-                        className="px-4 py-2 rounded-lg text-sm font-medium border transition-colors hover:bg-black/5"
-                        style={{ color: colors.foreground, borderColor: colors.border }}
-                    >
-                        Settings
-                    </button>
-                    <button
-                        className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                        style={{ backgroundColor: colors.foreground, color: colors.background }}
-                    >
-                        Edit Profile
-                    </button>
+                <div className="flex gap-4 items-center">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 uppercase font-semibold text-lg" style={{ backgroundColor: colors.muted, color: colors.foreground }}>
+                        {user?.email?.[0] || "?"}
+                    </div>
+                    <p className="text-sm font-medium opacity-60 truncate max-w-[150px] sm:max-w-none">
+                        {user?.email}
+                    </p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-6 rounded-2xl border flex flex-col items-center justify-center text-center" style={{ borderColor: colors.border }}>
-                    <div className="w-16 h-16 rounded-full mb-4 bg-gray-200" />
-                    <h2 className="text-xl font-medium" style={{ color: colors.foreground }}>User Name</h2>
-                    <p className="text-sm opacity-60 mt-1" style={{ color: colors.foreground }}>user@example.com</p>
+            {/* Overview Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+                <div className="p-6 rounded-2xl border flex flex-col items-center text-center justify-center" style={{ borderColor: colors.border, backgroundColor: colors.muted }}>
+                    <p className="text-xs sm:text-sm font-medium opacity-60 mb-2">Total Memories</p>
+                    <p className="text-3xl sm:text-4xl font-semibold">{data.memories.total}</p>
                 </div>
+                <div className="p-6 rounded-2xl border flex flex-col items-center text-center justify-center" style={{ borderColor: colors.border, backgroundColor: colors.muted }}>
+                    <p className="text-xs sm:text-sm font-medium opacity-60 mb-2">Sessions</p>
+                    <p className="text-3xl sm:text-4xl font-semibold">{data.sessions.total}</p>
+                </div>
+                <div className="col-span-2 p-6 rounded-2xl border flex flex-col justify-center" style={{ borderColor: colors.border }}>
+                    <p className="text-sm font-medium mb-4">Memory Breakdown</p>
+                    <div className="flex flex-wrap gap-2">
+                        {Object.entries(data.memories.byType).map(([type, count]) => (
+                            <span key={type} className="px-3 py-1 text-xs font-medium rounded-full bg-black/5 flex items-center gap-1.5 capitalize">
+                                {type} <span className="opacity-50">{count}</span>
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            </div>
 
-                <div className="md:col-span-2 grid grid-cols-2 gap-6">
-                    <div className="p-6 rounded-2xl border" style={{ borderColor: colors.border, backgroundColor: colors.muted }}>
-                        <p className="text-sm font-medium opacity-60 mb-2">Total Memories</p>
-                        <p className="text-4xl font-semibold">1,024</p>
-                    </div>
-                    <div className="p-6 rounded-2xl border" style={{ borderColor: colors.border, backgroundColor: colors.muted }}>
-                        <p className="text-sm font-medium opacity-60 mb-2">Active Sessions</p>
-                        <p className="text-4xl font-semibold">3</p>
-                    </div>
-                    <div className="col-span-2 p-6 rounded-2xl border" style={{ borderColor: colors.border }}>
-                        <h3 className="text-lg font-medium mb-4">Recent Activity</h3>
-                        <div className="space-y-4">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="flex justify-between items-center py-2 border-b last:border-0" style={{ borderColor: colors.border }}>
-                                    <span className="text-sm opacity-80">Synced data with cloud</span>
-                                    <span className="text-xs opacity-50">2 hours ago</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                {/* Recent Memories Column */}
+                <section>
+                    <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                        <Clock className="w-5 h-5 opacity-60" />
+                        Recent Memories
+                    </h2>
+                    <div className="grid gap-4">
+                        {data.memories.recent.map((memory) => (
+                            <Link
+                                to={`/memory#${memory.id}`}
+                                key={memory.id}
+                                className="group p-5 rounded-2xl border transition-all hover:-translate-y-1 hover:shadow-md"
+                                style={{ borderColor: colors.border, backgroundColor: colors.background }}
+                            >
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="p-2 rounded-lg bg-black/5 group-hover:bg-black group-hover:text-white transition-colors">
+                                        {getIconForType(memory.type)}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-medium text-sm leading-tight group-hover:underline">
+                                            {memory.filename}
+                                        </h3>
+                                        <p className="text-xs opacity-50 mt-0.5">{memory.last_updated}</p>
+                                    </div>
                                 </div>
-                            ))}
-                        </div>
+                                <p className="text-sm opacity-70 line-clamp-2 leading-relaxed">
+                                    {memory.preview}
+                                </p>
+                            </Link>
+                        ))}
                     </div>
-                </div>
+                </section>
+
+                {/* Latest Session Column */}
+                <section>
+                    <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                        <MessageSquare className="w-5 h-5 opacity-60" />
+                        Latest Session
+                    </h2>
+                    {data.sessions.latest ? (
+                        <div
+                            className="p-6 rounded-3xl border cursor-pointer transition-all hover:border-black/30 hover:shadow-md"
+                            style={{ borderColor: colors.border, backgroundColor: colors.muted }}
+                            onClick={() => navigate(`/chat/${data.sessions.latest.conversation_id}`)}
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <span className="text-xs font-medium px-3 py-1 bg-white rounded-full shadow-sm border" style={{ borderColor: colors.border }}>
+                                    Chat ID: {data.sessions.latest.conversation_id}
+                                </span>
+                                <span className="text-xs opacity-60 font-medium">
+                                    {data.sessions.latest.message_count} messages
+                                </span>
+                            </div>
+
+                            <div className="flex flex-col gap-4">
+                                {data.sessions.latest.messages.map((msg, i) => (
+                                    <div
+                                        key={i}
+                                        className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.role === "user"
+                                                ? "self-end bg-black text-white"
+                                                : "self-start bg-white border"
+                                            }`}
+                                        style={msg.role === "assistant" ? { borderColor: colors.border, color: colors.foreground } : {}}
+                                    >
+                                        <p className="line-clamp-4 whitespace-pre-wrap">{msg.content}</p>
+                                        <span className={`text-[10px] mt-2 block opacity-50 ${msg.role === "user" ? "text-right" : ""}`}>
+                                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-6 pt-4 border-t flex items-center justify-center gap-2 text-sm font-medium transition-opacity hover:opacity-70" style={{ borderColor: colors.border }}>
+                                Continue Conversation
+                                <span className="font-serif">→</span>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="p-6 rounded-2xl border text-center opacity-60 text-sm font-medium" style={{ borderColor: colors.border }}>
+                            No recent sessions found.
+                        </div>
+                    )}
+                </section>
             </div>
         </div>
     );

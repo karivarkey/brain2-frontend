@@ -27,6 +27,7 @@ export default function App() {
 
             {/* Guarded routes without the landing Navigation header */}
             <Route path="/chat" element={<AuthGuard><PageTransition><Chat /></PageTransition></AuthGuard>} />
+            <Route path="/chat/:conv_id" element={<AuthGuard><PageTransition><Chat /></PageTransition></AuthGuard>} />
             <Route path="/memory" element={<AuthGuard><PageTransition><Memory /></PageTransition></AuthGuard>} />
             <Route path="/dashboard" element={<AuthGuard><PageTransition><Dashboard /></PageTransition></AuthGuard>} />
           </Routes>
