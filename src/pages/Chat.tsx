@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { colors } from "../theme/colors";
 import { api } from "../lib/api";
 import { Settings, Plus, MessageSquare, ChevronLeft, Send, Sparkles } from "lucide-react";
-
+import { MarkdownRenderer } from "../components/MarkdownRenderer";
 interface MemoryChange {
     action: string;
     file: string;
@@ -262,7 +262,11 @@ export default function Chat() {
                                         }`}
                                     style={msg.role === 'assistant' ? { borderColor: colors.border } : {}}
                                 >
-                                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                                    {msg.role === 'assistant' ? (
+                                        <MarkdownRenderer content={msg.content} className="text-[15px] break-words" />
+                                    ) : (
+                                        <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                                    )}
                                 </div>
 
                                 {/* Assistant Metadata (Mutations) */}
